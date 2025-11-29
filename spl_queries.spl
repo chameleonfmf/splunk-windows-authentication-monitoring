@@ -1,0 +1,41 @@
+
+# Windows Authentication Monitoring - SPL Queries
+
+# 1. All failed logons (4625)
+index=* EventCode=4625
+
+# 2. Failed logons over time
+index=* EventCode=4625
+| timechart span=1h count
+
+# 3. Failed logons by account name
+index=* EventCode=4625
+| stats count by Account_Name
+| sort -count
+
+# 4. Failed logons by IP address
+index=* EventCode=4625
+| stats count by IpAddress
+| sort -count
+
+# 5. All successful logons (4624)
+index=* EventCode=4624
+
+# 6. Successful logons over time
+index=* EventCode=4624
+| timechart span=1h count
+
+# 7. Successful logons by account name
+index=* EventCode=4624
+| stats count by Account_Name
+| sort -count
+
+# 8. Authentication success vs failure comparison
+index=* (EventCode=4624 OR EventCode=4625)
+| eval Status = if(EventCode=4625, "Failed", "Successful")
+| timechart span=1h count by Status
+
+# 9. Detection logic - multiple failed logons per account & IP
+index=* EventCode=4625
+| stats count by Account_Name, IpAddress
+| where count >= 2
